@@ -1,8 +1,15 @@
 import { useEffect, useState } from "react";
+import { useSpring, animated } from "@react-spring/web";
 
 const HomePage = () => {
   const [loading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [message, setMessage] = useState("");
+  const [fadeIn, setFadeIn] = useSpring(() => ({ opacity: 1 }));
+
+  useEffect(() => {
+    setFadeIn({ opacity: 1 });
+  }, [setFadeIn]);
 
   const ingredientCategories = [
     "Protein",
@@ -69,6 +76,18 @@ const HomePage = () => {
     fetchOptions();
   }, []);
 
+  const fadeInInput = useSpring({
+    opacity: 1,
+    from: { opacity: 0 },
+    config: { duration: 500 },
+  });
+
+  const cardStyle = {
+    boxShadow: "0 0 10px rgba(0, 0, 0, 0.1)",
+    backgroundColor: "#ffffff",
+    border: "1px solid #e5e5e5",
+  };
+
   const handleIngredientChange = (category, value) => {
     setSelectedIngredients((prevIngredients) => ({
       ...prevIngredients,
@@ -78,22 +97,31 @@ const HomePage = () => {
 
   const getOptionsForCategory = (category) => {
     const selectedCategory = category.toLowerCase();
-  
+
     const options = categoryOptions[selectedCategory] || [];
-  
-    // Remove duplicates by creating a Set
-    const uniqueOptions = new Set(options.map((option) => option.IngredientName.toLowerCase()));
-  
-    // Include the selected ingredient in the options only if it's not already there
+
+    const uniqueOptions = new Set(
+      options.map((option) => option.IngredientName.toLowerCase())
+    );
+
     const updatedOptions = [
-      ...Array.from(uniqueOptions).map((optionName) => ({ IngredientName: optionName })),
+      ...Array.from(uniqueOptions).map((optionName) => ({
+        IngredientName: optionName,
+      })),
     ];
-  
+
     return updatedOptions;
   };
 
   const getRandomMeal = () => {
     const selectedProtein = selectedIngredients.protein.toLowerCase();
+
+    if (!selectedProtein) {
+      setMessage("Please select a protein first to randomize ingredients.");
+      return;
+    } else {
+      setMessage("");
+    }
 
     const randomMeal = {
       protein: selectedProtein,
@@ -103,7 +131,6 @@ const HomePage = () => {
       fruit: getRandomOption("Fruit"),
     };
 
-    // Update selectedIngredients with randomized values
     setSelectedIngredients({
       ...selectedIngredients,
       carbohydrate: randomMeal.carbohydrate,
@@ -113,7 +140,6 @@ const HomePage = () => {
     });
 
     console.log("Random Meal:", randomMeal);
-    // You can use the randomMeal object as needed, e.g., display it on the UI
   };
 
   const getRandomOption = (category) => {
@@ -123,16 +149,16 @@ const HomePage = () => {
   };
 
   return (
-    <div className="container mx-auto mt-8 p-4">
-      <div className="bg-white rounded-lg shadow-md">
+    <animated.div className="container mx-auto mt-8 p-4" style={fadeIn}>
+      <animated.div className="bg-white rounded-lg shadow-md" style={{ ...fadeIn, ...cardStyle }}>
         <form className="flex flex-col space-y-4 pb-6">
-          <div className="bg-nav-color h-14 w-full">
+          <animated.div className="bg-nav-color h-1/6 w-full" style={fadeIn}>
             <h2 className="text-white text-center my-3 text-lg font-extrabold tracking-tight">
               Create your own or randomize a meal!
             </h2>
-          </div>
+          </animated.div>
           {ingredientCategories.map((category) => (
-            <div key={category} className="w-3/4 m-auto">
+            <animated.div key={category} className="w-3/4 m-auto" style={fadeInInput}>
               <label htmlFor={category} className="text-lg font-semibold">
                 {category}
               </label>
@@ -141,14 +167,13 @@ const HomePage = () => {
                 name={category}
                 value={selectedIngredients[category.toLowerCase()]}
                 onChange={(e) =>
-                  handleIngredientChange(
-                    category.toLowerCase(),
-                    e.target.value
-                  )
+                  handleIngredientChange(category.toLowerCase(), e.target.value)
                 }
-                className="mt-2 p-2 border border-my-gray rounded-md w-full"
+                className="mt-2 p-2 border rounded-md w-full focus:border-nav-color"
               >
-                <option value="">Select {category}</option>
+                <option value="">
+                  Select {category}
+                </option>
                 {getOptionsForCategory(category).map((option) => (
                   <option
                     key={option.IngredientName}
@@ -158,19 +183,22 @@ const HomePage = () => {
                   </option>
                 ))}
               </select>
-            </div>
+            </animated.div>
           ))}
-          <button
+          {message && (
+            <p className="text-not-success-red">{message}</p>
+          )}
+          <animated.button
             type="button"
             onClick={getRandomMeal}
             className="bg-nav-color text-white p-2 rounded-md mt-4 w-3/4 m-auto"
-            disabled={!selectedIngredients.protein}
+            style={fadeIn}
           >
             Randomize Ingredients
-          </button>
+          </animated.button>
         </form>
-      </div>
-    </div>
+      </animated.div>
+    </animated.div>
   );
 };
 
